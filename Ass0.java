@@ -2,67 +2,87 @@ import java.util.*;
 import java.io.*;
 
 class Clock {
-    int t = 0;
+    private int t = 0;
 
     int next() {
         t += 10;
         return t;
     }
+
+    int nextinf() {
+        t += t * 100;
+        return t;
+    }
+
+    void reset() {
+        t = 0;
+    }
+
+    int getTime() {
+        return t;
+    }
+}
+
+class Wall {
+    Boolean w1 = false;
+    Boolean w2 = false;
+    Boolean w3 = false;
+    Boolean current = false;
+
+    void wallRender(float prob) {
+        w1 = prob > Math.random();
+        w2 = prob > Math.random();
+        w3 = prob > Math.random();
+        current = prob > Math.random();
+    }
+}
+
+class Walker {
+    Wall wall = new Wall();
+    Clock clk = new Clock();
+
+    int checkMove(float prob) {
+        wall.wallRender(prob);
+        clk.next();
+        if (wall.current && (wall.w1 || wall.w2 || wall.w3)) {
+            return 1;
+        }
+        return 0;
+    }
+
+    String start(float prob, int width) {
+        int pc = 0;
+        int i, moves = 0;
+        clk.reset();
+        // System.out.println("pb " + prob);
+        for (i = 0; i < 4000 && moves < width; i++) {
+            moves += checkMove(prob);
+        }
+        if (i < 4000) {
+            pc++;
+        } else {
+            clk.nextinf();
+        }
+        return clk.getTime() + " " + pc;
+    }
 }
 
 class Ass0 {
-
-    Boolean[] wall = new Boolean[3];
-
-    void wallRender(float prob) {
-        for (int j = 0; j < 3; j++) {
-            wall[j] = prob > Math.random();
-        }
-    }
-
-    boolean checkMove(float prob) {
-        Boolean cur = prob > Math.random();
-        if (cur && (wall[0] || wall[1] || wall[2])) {
-            return true;
-        }
-        return false;
-    }
-
     public static void main(String[] args) throws Exception {
         FileWriter flo = new FileWriter("output.txt");
         Scanner sc = new Scanner(new File("input.txt"));
-        Ass0 app = new Ass0();
-        int epochs = 50;
+        int epochs = 100;
         String flow = sc.hasNext() ? sc.nextInt() + " " + sc.nextInt() + "\n" : "";
         while (sc.hasNext()) {
-            int steps = 0;
             float pg = sc.nextFloat();
-            float prob = 1 - pg;
-            int width = sc.nextInt();
-            int pc = 0;
+            int steps = 0, pc = 0, width = sc.nextInt();
+            Walker wk = new Walker();
             for (int epoch = 0; epoch < epochs; epoch++) {
-                app.wallRender(prob);
-                boolean brk = false;
-                int i, moves = 0;
-                for (i = 1; i < 2001 && moves < width; i++) {
-                    app.wallRender(prob);
-                    brk = app.checkMove(width);
-                    if (brk)
-                        moves++;
-                }
-                if (i != 2001 && brk) {
-                    pc++;
-                    steps = steps + i * 10;
-                } else {
-                    steps += i * 100;
-                }
-
+                String[] result = wk.start((1 - pg), width).split(" ");
+                steps += Integer.parseInt(result[0]);
+                pc += Integer.parseInt(result[1]);
             }
-            // assignment.printWalker(width);
-
-            flow += pg + " " + width + " " + (steps / epochs) + " " + (pc / epochs) + "\n";
-
-            // assignment.printWall(width);
+            flow += pg + " " + width + " " + (steps / epochs) + " " + (pc * 1.0 / epochs) + "\n";
         }
         flo.write(flow);
         flo.close();
